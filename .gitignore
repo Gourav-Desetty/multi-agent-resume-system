@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+.venv/
+ENV/
+
+# Env config
+.env
+.env.local
+
+# Databases and Local Storage
+data/resumes/*
+!data/resumes/.gitkeep
+data/job_descriptions/*
+!data/job_descriptions/.gitkeep
+data/database.json
+data/*.db
+data/*.index
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/build/
+.eslintcache
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+data/
