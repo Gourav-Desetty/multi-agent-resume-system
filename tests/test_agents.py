@@ -2,6 +2,7 @@ from backend.state.graph_state import AgentState
 from backend.agents.parser import run_parser_agent
 from backend.agents.jd_matcher import run_jd_matcher_agent
 from backend.agents.scoring import run_scoring_agent
+from backend.agents.skill_gap import run_skill_gap_agent
 
 def test_parser_agent():
     state: AgentState = {
@@ -46,3 +47,26 @@ def test_jd_matcher_agent():
     assert "match_result" in result
     assert result["match_result"]["skill_match_score"] > 50
     assert "reasoning" in result["match_result"]
+
+def test_skill_gap_fallback_uses_actual_job_requirements(monkeypatch):
+    monkeypatch.setattr("backend.agents.skill_gap.is_groq_configured", lambda: False)
+    state: AgentState = {
+        "candidate_id": "test-c1",
+        "raw_text": "",
+        "job_id": "job-1",
+        "job_text": "Need Python, Kafka and Kubernetes experience.",
+        "profile": {
+            "skills": ["Python", "Kubernetes"]
+        },
+        "match_result": None,
+        "scores": None,
+        "warnings": None,
+        "skill_gap": None,
+        "interview_studio": None,
+        "feedback_report": None,
+        "errors": []
+    }
+
+    result = run_skill_gap_agent(state)
+
+    assert result["skill_gap"]["missing_skills"] == ["Kafka"]

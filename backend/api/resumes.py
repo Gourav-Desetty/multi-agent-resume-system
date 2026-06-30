@@ -15,6 +15,7 @@ from backend.services.graph_service import (
     parse_candidate_resume,
     screen_candidate_workflow,
 )
+from backend.agents.skill_gap import compute_fallback_skill_gap, is_legacy_mock_skill_gap
 
 
 router = APIRouter(prefix="/candidates", tags=["Candidates & Resumes"])
@@ -28,6 +29,15 @@ def ensure_candidate_profile(candidate: dict) -> dict:
             candidate["profile"] = normalized_profile
             candidate["last_updated"] = datetime.now().isoformat()
             db.save_candidate(candidate)
+        if is_legacy_mock_skill_gap(candidate.get("skill_gap")) and candidate.get("active_job_id"):
+            job = db.get_jd(candidate["active_job_id"])
+            if job:
+                candidate["skill_gap"] = compute_fallback_skill_gap(
+                    candidate["profile"],
+                    job.get("raw_text", "")
+                )
+                candidate["last_updated"] = datetime.now().isoformat()
+                db.save_candidate(candidate)
         return candidate
 
     if not has_placeholder_text:
