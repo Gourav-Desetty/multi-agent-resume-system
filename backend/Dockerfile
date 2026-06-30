@@ -11,7 +11,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ ./backend/
-COPY data/ ./data/
+RUN mkdir -p data/resumes data/job_descriptions
 
 ENV PYTHONPATH=/app
 ENV HOST=0.0.0.0
