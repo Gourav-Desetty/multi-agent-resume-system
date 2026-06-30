@@ -231,21 +231,47 @@ export default function CandidateProfile() {
 
         {activeTab === 'education' && (
           <Card title="Education & Credentials">
-            {profile.education?.length > 0 ? (
-              <div className="space-y-4">
-                {profile.education.map((edu, idx) => (
-                  <div key={idx} className="flex items-start space-x-3 p-3 bg-brand-dark/40 border border-brand-border rounded-xl">
-                    <GraduationCap className="text-brand-primary shrink-0 mt-1" size={20} />
-                    <div className="space-y-0.5">
-                      <h4 className="text-sm font-bold text-white">{edu.degree}</h4>
-                      <p className="text-xs text-brand-muted">{edu.institution} {edu.year ? `(${edu.year})` : ''}</p>
-                      {edu.major && <p className="text-xxs text-brand-muted font-mono">Major: {edu.major}</p>}
+            {profile.education?.length > 0 || profile.certifications?.length > 0 ? (
+              <div className="space-y-6">
+                {profile.education?.length > 0 && (
+                  <div className="space-y-4">
+                    {profile.education.map((edu, idx) => (
+                      <div key={idx} className="flex items-start space-x-3 p-3 bg-brand-dark/40 border border-brand-border rounded-xl">
+                        <GraduationCap className="text-brand-primary shrink-0 mt-1" size={20} />
+                        <div className="space-y-0.5">
+                          <h4 className="text-sm font-bold text-white">{edu.degree}</h4>
+                          <p className="text-xs text-brand-muted">{edu.institution} {edu.year ? `(${edu.year})` : ''}</p>
+                          {edu.major && <p className="text-xxs text-brand-muted font-mono">Major: {edu.major}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {profile.certifications?.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                      <Award className="text-brand-accent" size={15} />
+                      <span>Certifications</span>
+                    </h4>
+                    <div className="space-y-3">
+                      {profile.certifications.map((cert, idx) => (
+                        <div key={idx} className="flex items-start space-x-3 p-3 bg-brand-dark/40 border border-brand-border rounded-xl">
+                          <Award className="text-brand-accent shrink-0 mt-1" size={18} />
+                          <div className="space-y-0.5">
+                            <h4 className="text-sm font-bold text-white">{cert.name}</h4>
+                            <p className="text-xs text-brand-muted">
+                              {[cert.issuer, cert.year].filter(Boolean).join(' | ') || 'Issuer not specified'}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             ) : (
-              <p className="text-xs text-brand-muted font-mono text-center">No education history parsed.</p>
+              <p className="text-xs text-brand-muted font-mono text-center">No education or credentials parsed.</p>
             )}
           </Card>
         )}

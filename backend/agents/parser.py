@@ -268,21 +268,63 @@ def _extract_projects(lines: list[str]) -> list[dict]:
             })
     return projects
 
+def _extract_certifications(lines: list[str]) -> list[dict]:
+    certifications = []
+    in_certifications = False
+
+    for line in lines:
+        clean = line.strip()
+        lower = clean.lower()
+
+        if lower in {"certifications", "certificates", "credentials"}:
+            in_certifications = True
+            continue
+        if in_certifications and lower in {
+            "experience", "projects", "education", "technical skills", "skills",
+            "achievements", "honors and awards", "relevant coursework"
+        }:
+            break
+        if not in_certifications or not clean:
+            continue
+
+        cert_text = clean.lstrip("-â€¢ ").strip()
+        if not cert_text or re.search(r"\b(github|linkedin|portfolio)\b", cert_text, re.IGNORECASE):
+            continue
+
+        parts = [part.strip() for part in cert_text.split("|")]
+        name_and_issuer = parts[0]
+        year = parts[1] if len(parts) > 1 else None
+        issuer = None
+        name = name_and_issuer
+
+        if " - " in name_and_issuer:
+            name, issuer = [part.strip() for part in name_and_issuer.rsplit(" - ", 1)]
+
+        certifications.append({
+            "name": name,
+            "issuer": issuer,
+            "year": year,
+        })
+
+    return certifications
+
 def run_parser_agent(state: AgentState) -> dict:
     logger.info("Executing Parser Agent Node...")
     raw_text = state.get("raw_text") or ""
+    lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
     
     if is_groq_configured():
         prompt = PARSER_PROMPT.format(resume_text=raw_text)
         res_str = call_llm(prompt)
         profile = parse_json_safely(res_str)
         if profile:
+            if not profile.get("certifications"):
+                profile["certifications"] = _extract_certifications(lines)
             logger.info("Successfully parsed resume using Groq.")
             return {"profile": profile}
             
     logger.info("Running heuristic parser fallback...")
 
-    lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
     skills = _extract_skills(raw_text)
 
     profile = {
@@ -293,7 +335,7 @@ def run_parser_agent(state: AgentState) -> dict:
         "experience": _extract_experience(lines),
         "skills": skills,
         "projects": _extract_projects(lines),
-        "certifications": [],
+        "certifications": _extract_certifications(lines),
         "achievements": []
     }
     

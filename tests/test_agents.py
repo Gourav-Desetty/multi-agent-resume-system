@@ -25,6 +25,45 @@ def test_parser_agent():
     assert result["profile"]["name"] == "Alex Mercer"
     assert result["profile"]["email"] == "alex@example.com"
 
+def test_parser_agent_extracts_certifications(monkeypatch):
+    monkeypatch.setattr("backend.agents.parser.is_groq_configured", lambda: False)
+    state: AgentState = {
+        "candidate_id": "test-certs",
+        "raw_text": """Alex Mercer
+alex@example.com
+CERTIFICATIONS
+- Mastering Retrieval-Augmented Generation - Neo4j | Oct 2025
+- Machine Learning Onramp - MathWorks | Jul 2025
+PROJECTS
+Example App - Built with Python
+""",
+        "job_id": None,
+        "job_text": None,
+        "profile": None,
+        "match_result": None,
+        "scores": None,
+        "warnings": None,
+        "skill_gap": None,
+        "interview_studio": None,
+        "feedback_report": None,
+        "errors": []
+    }
+
+    result = run_parser_agent(state)
+
+    assert result["profile"]["certifications"] == [
+        {
+            "name": "Mastering Retrieval-Augmented Generation",
+            "issuer": "Neo4j",
+            "year": "Oct 2025",
+        },
+        {
+            "name": "Machine Learning Onramp",
+            "issuer": "MathWorks",
+            "year": "Jul 2025",
+        },
+    ]
+
 def test_jd_matcher_agent():
     state: AgentState = {
         "candidate_id": "test-c1",

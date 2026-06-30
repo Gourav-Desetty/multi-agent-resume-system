@@ -16,9 +16,47 @@ from backend.services.graph_service import (
     screen_candidate_workflow,
 )
 from backend.agents.skill_gap import compute_fallback_skill_gap, is_legacy_mock_skill_gap
+from backend.agents.parser import _extract_certifications
 
 
 router = APIRouter(prefix="/candidates", tags=["Candidates & Resumes"])
+
+def backfill_candidate_certifications(candidate: dict) -> bool:
+    profile = candidate.get("profile") or {}
+    if profile.get("certifications"):
+        return False
+
+    raw_text = candidate.get("raw_text") or ""
+    certifications = _extract_certifications([
+        line.strip() for line in raw_text.splitlines() if line.strip()
+    ])
+    if not certifications:
+        return False
+
+    profile["certifications"] = certifications
+    candidate["profile"] = profile
+
+    scores = candidate.get("scores") or {}
+    if scores:
+        previous_cert_score = scores.get("certifications", 45) or 45
+        new_cert_score = min(90, 45 + len(certifications) * 15)
+        scores["certifications"] = new_cert_score
+        scores["weaknesses"] = [
+            weakness for weakness in scores.get("weaknesses", [])
+            if weakness != "No certifications were parsed from the resume."
+        ]
+        if scores.get("final_score") is not None:
+            scores["final_score"] = min(100, int(scores["final_score"] + (new_cert_score - previous_cert_score) * 0.08))
+        candidate["scores"] = scores
+
+    report = candidate.get("feedback_report") or {}
+    if report.get("weaknesses_summary"):
+        report["weaknesses_summary"] = report["weaknesses_summary"].replace(
+            "No certifications were parsed from the resume.", ""
+        ).strip()
+        candidate["feedback_report"] = report
+
+    return True
 
 def ensure_candidate_profile(candidate: dict) -> dict:
     raw_text = candidate.get("raw_text") or ""
@@ -27,6 +65,9 @@ def ensure_candidate_profile(candidate: dict) -> dict:
         normalized_profile = normalize_candidate_profile(candidate["profile"])
         if normalized_profile != candidate["profile"]:
             candidate["profile"] = normalized_profile
+            candidate["last_updated"] = datetime.now().isoformat()
+            db.save_candidate(candidate)
+        if backfill_candidate_certifications(candidate):
             candidate["last_updated"] = datetime.now().isoformat()
             db.save_candidate(candidate)
         if is_legacy_mock_skill_gap(candidate.get("skill_gap")) and candidate.get("active_job_id"):
